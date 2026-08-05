@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>TV Episode Generator</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:#111;
+    color:#fff;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+.container{
+    width:90%;
+    max-width:800px;
+    margin:40px auto;
+    text-align:center;
+}
+
+h1{
+    margin-bottom:40px;
+    font-size:42px;
+}
+
+.date-row{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:20px;
+}
+
+.arrow{
+    width:70px;
+    height:70px;
+    border:none;
+    border-radius:10px;
+    background:#009688;
+    color:white;
+    font-size:32px;
+    cursor:pointer;
+}
+
+.arrow:hover,
+.arrow:focus{
+    background:#00bfa5;
+    outline:4px solid white;
+}
+
+#dateDisplay{
+
+    min-width:250px;
+
+    padding:18px 25px;
+
+    background:#222;
+
+    border-radius:10px;
+
+    font-size:30px;
+
+    cursor:pointer;
+
+    user-select:none;
+}
+
+#dateDisplay:hover,
+#dateDisplay:focus{
+
+    background:#333;
+
+    outline:4px solid white;
+
+}
+
+#picker{
+
+    display:none;
+
+}
+
+#generate{
+
+    margin-top:40px;
+
+    padding:18px 40px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:#1976d2;
+
+    color:white;
+
+    font-size:26px;
+
+    cursor:pointer;
+
+}
+
+#generate:hover,
+#generate:focus{
+
+    outline:4px solid white;
+
+}
+
+#result{
+
+    margin-top:40px;
+
+    word-break:break-all;
+
+}
+
+#result a{
+
+    color:#00ff88;
+
+    text-decoration:none;
+
+}
+
+#result a:hover{
+
+    text-decoration:underline;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>TV Episode</h1>
+
+<div class="date-row">
+
+<button class="arrow" id="prev">◀</button>
+
+<div
+id="dateDisplay"
+tabindex="0">
+</div>
+
+<button class="arrow" id="next">▶</button>
+
+</div>
+
+<input
+type="date"
+id="picker">
+
+<button
+id="generate">
+Generate URL
+</button>
+
+<div id="result"></div>
+
+</div>
+
+<script>
+
+const picker=document.getElementById("picker");
+
+let currentDate=new Date();
+
+function formatDate(){
+
+    const day=String(currentDate.getDate()).padStart(2,"0");
+    const month=String(currentDate.getMonth()+1).padStart(2,"0");
+    const year=currentDate.getFullYear();
+
+    document.getElementById("dateDisplay").innerHTML=
+    "📅 "+day+"-"+month+"-"+year;
+
+    picker.value=
+    `${year}-${month}-${day}`;
+
+}
+
+formatDate();
+
+document.getElementById("prev").onclick=()=>{
+
+    currentDate.setDate(currentDate.getDate()-1);
+
+    formatDate();
+
+};
+
+document.getElementById("next").onclick=()=>{
+
+    currentDate.setDate(currentDate.getDate()+1);
+
+    formatDate();
+
+};
+
+document.getElementById("dateDisplay").onclick=()=>{
+
+    if(picker.showPicker){
+
+        picker.showPicker();
+
+    }else{
+
+        picker.click();
+
+    }
+
+};
+
+picker.onchange=()=>{
+
+    currentDate=new Date(picker.value);
+
+    formatDate();
+
+};
+
+document.getElementById("generate").onclick=loadEpisode;
+
+async function loadEpisode(){
+
+    const day=String(currentDate.getDate()).padStart(2,"0");
+
+    const month=String(currentDate.getMonth()+1).padStart(2,"0");
+
+    const year=currentDate.getFullYear();
+
+    const api=
+`https://web-production-59484c.up.railway.app/episode?day=${day}&month=${month}&year=${year}`;
+
+    document.getElementById("result").innerHTML="Loading...";
+
+    try{
+
+        const response=await fetch(api);
+
+        const data=await response.json();
+
+        if(!data.success){
+
+            document.getElementById("result").innerHTML=
+            "Episode not found.";
+
+            return;
+
+        }
+
+        document.getElementById("result").innerHTML=
+        `<h3>Video URL</h3>
+        <a href="${data.url}" target="_blank">${data.url}</a>`;
+
+    }
+    catch(e){
+
+        document.getElementById("result").innerHTML=e;
+
+    }
+
+}
+
+document.addEventListener("keydown",(e)=>{
+
+    switch(e.key){
+
+        case "ArrowLeft":
+
+            currentDate.setDate(currentDate.getDate()-1);
+
+            formatDate();
+
+            break;
+
+        case "ArrowRight":
+
+            currentDate.setDate(currentDate.getDate()+1);
+
+            formatDate();
+
+            break;
+
+        case "Enter":
+
+            if(document.activeElement.id==="dateDisplay"){
+
+                if(picker.showPicker){
+
+                    picker.showPicker();
+
+                }else{
+
+                    picker.click();
+
+                }
+
+            }
+
+            break;
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>
