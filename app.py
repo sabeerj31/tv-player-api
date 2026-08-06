@@ -8,7 +8,7 @@ app = FastAPI(
     title="TV Player API"
 )
 
-# Allow requests from any website
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,27 +30,49 @@ def episode(day: str, month: str, year: str):
 
     page = f"https://thisaitv.com/onna-irukka-kaththukkanum-{day}-{month}-{year}/"
 
-    html = requests.get(
-        page,
-        headers={
-            "User-Agent": "Mozilla/5.0"
-        }
-    ).text
+    try:
 
-    match = re.search(
-        r'"contentUrl":"https:\\/\\/cdn\.tamilnxt\.com\\/videos\\/.*?-([a-f0-9]{6})\\/index\.m3u8"',
+        response = requests.get(
+            page,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/138.0 Safari/537.36"
+                )
+            },
+            timeout=15
+        )
+
+        html = response.text
+
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e)
+        }
+
+    # Find every contentUrl in the page
+    matches = re.findall(
+        r'"contentUrl"\s*:\s*"((?:https:\\/\\/)[^"]+?index\.m3u8)"',
         html
     )
 
-    if not match:
+    if not matches:
         return {
             "success": False,
-            "message": "Episode not found"
+            "message": "Video URL not found"
         }
 
-    code = match.group(1)
+    # Use the first match
+    video = matches[0].replace("\\/", "/")
 
-    video = f"https://cdn.tamilnxt.com/videos/onna-irukka-kaththukkanum-{day}-{month}-{year}-{code}/index.m3u8"
+    code_match = re.search(
+        r"-([a-f0-9]{6})/index\.m3u8$",
+        video
+    )
+
+    code = code_match.group(1) if code_match else ""
 
     return {
         "success": True,
